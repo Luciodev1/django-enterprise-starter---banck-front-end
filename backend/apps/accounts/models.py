@@ -1,7 +1,10 @@
+import secrets
 import uuid
+from datetime import timedelta
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
@@ -44,6 +47,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_mfa_enabled = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    last_login_ip = models.GenericIPAddressField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -56,6 +60,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = "Usuário"
         verbose_name_plural = "Usuários"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["role"]),
+            models.Index(fields=["is_active"]),
+            models.Index(fields=["created_at"]),
+        ]
 
     def __str__(self):
         return f"{self.get_full_name()} ({self.email})"
@@ -65,3 +74,57 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_short_name(self):
         return self.first_name
+
+
+class PasswordResetToken(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")
+    token = models.CharField(max_length=128, unique=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["token"]), models.Index(fields=["expires_at"])]
+
+    @classmethod
+    def create_for_user(cls, user, ttl_hours: int = 2):
+        return cls.objects.create(
+            user=user,
+            token=secrets.token_urlsafe(48),
+            expires_at=timezone.now() + timedelta(hours=ttl_hours),
+        )
+
+    def is_valid(self) -> bool:
+        return self.used_at is None and self.expires_at > timezone.now()
+
+    def __str__(self):
+        return f"ResetToken<{self.user.email}>"
+
+
+class EmailVerificationToken(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_verification_tokens")
+    token = models.CharField(max_length=128, unique=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["token"])]
+
+    @classmethod
+    def create_for_user(cls, user, ttl_hours: int = 48):
+        return cls.objects.create(
+            user=user,
+            token=secrets.token_urlsafe(48),
+            expires_at=timezone.now() + timedelta(hours=ttl_hours),
+        )
+
+    def is_valid(self) -> bool:
+        return self.used_at is None and self.expires_at > timezone.now()
+
+    def __str__(self):
+        return f"EmailVerifyToken<{self.user.email}>"
