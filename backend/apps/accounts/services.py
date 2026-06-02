@@ -1,7 +1,12 @@
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
+from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.core.utils import log_audit, log_security
+
+from .models import EmailVerificationToken, PasswordResetToken
+
+User = get_user_model()
 
 
 class AuthService:
@@ -17,6 +22,8 @@ class AuthService:
             return None, "Account is disabled"
 
         refresh = RefreshToken.for_user(user)
+        user.last_login_ip = request.META.get("REMOTE_ADDR") if request else None
+        user.save(update_fields=["last_login_ip", "updated_at"])
         log_audit("login", user, {"email": email})
         return {
             "access": str(refresh.access_token),
@@ -27,6 +34,9 @@ class AuthService:
                 "first_name": user.first_name,
                 "last_name": user.last_name,
                 "role": user.role,
+                "avatar": user.avatar.url if user.avatar else None,
+                "is_verified": user.is_verified,
+                "is_mfa_enabled": user.is_mfa_enabled,
             },
         }, None
 
@@ -46,3 +56,58 @@ class AuthService:
             }, None
         except Exception:
             return None, "Invalid or expired refresh token"
+
+    @staticmethod
+    def request_password_reset(email: str):
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            return None, "If the email exists, a reset link will be sent"
+
+        PasswordResetToken.objects.filter(user=user, used_at__isnull=True).update(used_at=timezone.now())
+        token = PasswordResetToken.create_for_user(user)
+        log_audit("password_reset_requested", user, {"token_id": str(token.id)})
+        return {"token": token.token, "user_id": str(user.id)}, None
+
+    @staticmethod
+    def confirm_password_reset(token: str, new_password: str):
+        try:
+            reset = PasswordResetToken.objects.select_related("user").get(token=token)
+        except PasswordResetToken.DoesNotExist:
+            return None, "Invalid or expired token"
+
+        if not reset.is_valid():
+            return None, "Token expired or already used"
+
+        user = reset.user
+        user.set_password(new_password)
+        user.save(update_fields=["password", "updated_at"])
+        reset.used_at = timezone.now()
+        reset.save(update_fields=["used_at"])
+        log_audit("password_reset_completed", user)
+        return {"message": "Password reset successfully"}, None
+
+    @staticmethod
+    def request_email_verification(user):
+        EmailVerificationToken.objects.filter(user=user, used_at__isnull=True).update(used_at=timezone.now())
+        token = EmailVerificationToken.create_for_user(user)
+        log_audit("email_verification_requested", user)
+        return {"token": token.token}, None
+
+    @staticmethod
+    def confirm_email_verification(token: str):
+        try:
+            verify = EmailVerificationToken.objects.select_related("user").get(token=token)
+        except EmailVerificationToken.DoesNotExist:
+            return None, "Invalid or expired token"
+
+        if not verify.is_valid():
+            return None, "Token expired or already used"
+
+        user = verify.user
+        user.is_verified = True
+        user.save(update_fields=["is_verified", "updated_at"])
+        verify.used_at = timezone.now()
+        verify.save(update_fields=["used_at"])
+        log_audit("email_verified", user)
+        return {"message": "Email verified successfully"}, None

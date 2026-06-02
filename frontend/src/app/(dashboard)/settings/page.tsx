@@ -3,92 +3,98 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Alert } from "@/components/ui/Alert";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { useAuth } from "@/features/auth/AuthContext";
-import { Shield, Lock } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
-
-const passwordSchema = z.object({
-  current_password: z.string().min(1, "Senha atual é obrigatória"),
-  new_password: z.string().min(8, "Mínimo de 8 caracteres"),
-  confirm_password: z.string().min(1, "Confirmação é obrigatória"),
-}).refine((data) => data.new_password === data.confirm_password, {
-  message: "Senhas não conferem",
-  path: ["confirm_password"],
-});
-
-type PasswordForm = z.infer<typeof passwordSchema>;
+import { authService } from "@/services/auth";
+import { useMe, useUnreadCount } from "@/hooks/queries";
+import { useAuth } from "@/features/auth/AuthContext";
+import { useHealth } from "@/hooks/queries";
+import { Shield, Mail, Bell, Server, Activity, CheckCircle2 } from "lucide-react";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
-  const [success, setSuccess] = useState(false);
+  const { data: me } = useMe();
+  const { data: unread } = useUnreadCount();
+  const { data: health } = useHealth();
+  const { logout } = useAuth();
+  const [verifying, setVerifying] = useState(false);
+  const [verifyMsg, setVerifyMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [tokenDisplay, setTokenDisplay] = useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<PasswordForm>({
-    resolver: zodResolver(passwordSchema),
-  });
-
-  const onSubmit = async (_data: PasswordForm) => {
-    await new Promise((r) => setTimeout(r, 1000));
-    setSuccess(true);
-    reset();
-    setTimeout(() => setSuccess(false), 3000);
+  const requestVerification = async () => {
+    setVerifying(true);
+    setVerifyMsg(null);
+    try {
+      const result = await authService.requestEmailVerification();
+      setTokenDisplay(result.token);
+      setVerifyMsg({ type: "success", text: "Token emitido. Em produção, enviado por email." });
+    } catch (err: any) {
+      setVerifyMsg({ type: "error", text: err?.response?.data?.message || "Erro ao solicitar verificação" });
+    } finally {
+      setVerifying(false);
+    }
   };
 
   return (
     <div className="max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-secondary-900">Configurações</h1>
-        <p className="text-sm text-secondary-500">Gerencie suas preferências</p>
+        <p className="text-sm text-secondary-500">Segurança, conta e notificações</p>
       </div>
+
+      {verifyMsg && (
+        <Alert variant={verifyMsg.type} onClose={() => setVerifyMsg(null)}>
+          <AlertDescription>
+            {verifyMsg.text}
+            {tokenDisplay && (
+              <div className="mt-2 p-2 bg-secondary-50 rounded text-xs font-mono break-all">
+                Token: {tokenDisplay}
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5 text-primary-600" />
-            Alterar Senha
+            <Mail className="h-5 w-5 text-primary-600" />
+            Verificação de Email
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          {success && (
-            <Alert variant="success" className="mb-4">
-              <p>Senha alterada com sucesso!</p>
-            </Alert>
-          )}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Input
-              id="current_password"
-              label="Senha Atual"
-              type="password"
-              error={errors.current_password?.message}
-              {...register("current_password")}
-            />
-            <Input
-              id="new_password"
-              label="Nova Senha"
-              type="password"
-              error={errors.new_password?.message}
-              {...register("new_password")}
-            />
-            <Input
-              id="confirm_password"
-              label="Confirmar Nova Senha"
-              type="password"
-              error={errors.confirm_password?.message}
-              {...register("confirm_password")}
-            />
-            <div className="flex justify-end">
-              <Button type="submit">Alterar Senha</Button>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">{me?.email}</p>
+              <p className="text-sm text-secondary-500">Status da verificação do email</p>
             </div>
-          </form>
+            {me?.is_verified ? (
+              <Badge variant="success" className="flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3" /> Verificado
+              </Badge>
+            ) : (
+              <Button size="sm" onClick={requestVerification} loading={verifying}>
+                Solicitar verificação
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5 text-primary-600" />
+            Notificações
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Não lidas</p>
+              <p className="text-sm text-secondary-500">Notificações pendentes na sua conta</p>
+            </div>
+            <Badge variant={unread && unread > 0 ? "warning" : "secondary"}>{unread ?? 0}</Badge>
+          </div>
         </CardContent>
       </Card>
 
@@ -102,20 +108,55 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">Autenticação de Dois Fatores</p>
+              <p className="font-medium">Autenticação Multifator (MFA)</p>
               <p className="text-sm text-secondary-500">Adicione uma camada extra de segurança</p>
             </div>
-            <Badge variant="secondary">Em breve</Badge>
+            <Badge variant={me?.is_mfa_enabled ? "success" : "secondary"}>
+              {me?.is_mfa_enabled ? "Ativo" : "Inativo"}
+            </Badge>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-3 border-t">
             <div>
-              <p className="font-medium">Sessões Ativas</p>
-              <p className="text-sm text-secondary-500">Gerencie seus dispositivos conectados</p>
+              <p className="font-medium">Sair de todos os dispositivos</p>
+              <p className="text-sm text-secondary-500">Encerra a sessão actual e invalida o token</p>
             </div>
-            <Badge variant="secondary">Em breve</Badge>
+            <Button variant="outline" onClick={logout}>
+              Terminar sessão
+            </Button>
           </div>
         </CardContent>
       </Card>
+
+      {health && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Server className="h-5 w-5 text-primary-600" />
+              Estado do Sistema
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-2">
+                <Activity className="h-4 w-4" /> Status geral
+              </span>
+              <Badge variant={health.status === "ok" ? "success" : "warning"}>{health.status}</Badge>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span>Base de dados</span>
+              <Badge variant={health.database === "ok" ? "success" : "error"}>{health.database}</Badge>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span>Cache (Redis)</span>
+              <Badge variant={health.cache === "ok" ? "success" : "error"}>{health.cache}</Badge>
+            </div>
+            <div className="flex items-center justify-between text-sm text-secondary-500">
+              <span>Versão</span>
+              <span className="font-mono text-xs">{health.version}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

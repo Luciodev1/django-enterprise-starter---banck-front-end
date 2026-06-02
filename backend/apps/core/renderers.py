@@ -5,6 +5,8 @@ class StandardJSONRenderer(JSONRenderer):
     def render(self, data, accepted_media_type=None, renderer_context=None):
         response = renderer_context.get("response") if renderer_context else None
         if response and response.status_code >= 400:
+            if isinstance(data, dict) and "success" in data and "message" in data:
+                return super().render(data, accepted_media_type, renderer_context)
             return super().render(
                 {"success": False, "message": "Request failed", "errors": data},
                 accepted_media_type, renderer_context,

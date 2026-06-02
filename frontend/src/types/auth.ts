@@ -6,8 +6,10 @@ export interface User {
   phone: string;
   avatar: string | null;
   role: "superadmin" | "admin" | "manager" | "operator" | "client";
+  is_active: boolean;
   is_verified: boolean;
   is_mfa_enabled: boolean;
+  last_login_at: string | null;
   created_at: string;
   updated_at: string;
 }

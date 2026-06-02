@@ -7,30 +7,40 @@ import {
   LayoutDashboard,
   User,
   Settings,
-  Shield,
   Bell,
   BarChart3,
-  Building2,
   Users,
+  History,
   ChevronLeft,
 } from "lucide-react";
+import { useUnreadCount } from "@/hooks/queries";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/users", label: "Usuários", icon: Users },
-  { href: "/dashboard/companies", label: "Empresas", icon: Building2 },
-  { href: "/dashboard/reports", label: "Relatórios", icon: BarChart3 },
-  { href: "/profile", label: "Perfil", icon: User },
-  { href: "/settings", label: "Configurações", icon: Settings },
-];
-
-interface SidebarProps {
-  collapsed: boolean;
-  onToggle: () => void;
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: number;
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({
+  collapsed,
+  onToggle,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
   const pathname = usePathname();
+  const { data: unread } = useUnreadCount();
+
+  const navItems: NavItem[] = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/dashboard/users", label: "Usuários", icon: Users },
+    { href: "/dashboard/notifications", label: "Notificações", icon: Bell, badge: unread },
+    { href: "/dashboard/audit", label: "Auditoria", icon: History },
+    { href: "/dashboard/reports", label: "Relatórios", icon: BarChart3 },
+    { href: "/profile", label: "Perfil", icon: User },
+    { href: "/settings", label: "Configurações", icon: Settings },
+  ];
 
   return (
     <aside
@@ -45,10 +55,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             Enterprise
           </Link>
         )}
-        <button
-          onClick={onToggle}
-          className="p-2 rounded-md hover:bg-muted transition-colors"
-        >
+        <button onClick={onToggle} className="p-2 rounded-md hover:bg-muted transition-colors">
           <ChevronLeft className={cn("h-5 w-5 transition-transform", collapsed && "rotate-180")} />
         </button>
       </div>
@@ -68,16 +75,23 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               )}
             >
               <item.icon className="h-5 w-5 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && (
+                <>
+                  <span className="flex-1">{item.label}</span>
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="ml-auto bg-error-500 text-white text-[10px] rounded-full h-4 min-w-[16px] flex items-center justify-center px-1">
+                      {item.badge}
+                    </span>
+                  )}
+                </>
+              )}
             </Link>
           );
         })}
       </nav>
 
       <div className="border-t p-4">
-        {!collapsed && (
-          <p className="text-xs text-secondary-400">Enterprise Starter v1.0</p>
-        )}
+        {!collapsed && <p className="text-xs text-secondary-400">Enterprise Starter v1.0</p>}
       </div>
     </aside>
   );

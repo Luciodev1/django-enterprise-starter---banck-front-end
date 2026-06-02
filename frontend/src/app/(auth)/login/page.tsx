@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Alert } from "@/components/ui/Alert";
 import { useAuth } from "@/features/auth/AuthContext";
+import { getApiErrorMessage } from "@/lib/utils";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -40,8 +41,7 @@ export default function LoginPage() {
       await login(data.email, data.password);
       router.push("/dashboard");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erro ao fazer login";
-      setError(message);
+      setError(getApiErrorMessage(err, "Não foi possível fazer login. Verifique suas credenciais."));
     } finally {
       setLoading(false);
     }
