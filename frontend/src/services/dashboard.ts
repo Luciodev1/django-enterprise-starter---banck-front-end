@@ -7,6 +7,7 @@ export interface DashboardStats {
     active: number;
     inactive: number;
     new_last_30: number;
+    verified: number;
     by_role: Record<string, number>;
   };
   audit: {

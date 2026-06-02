@@ -44,6 +44,7 @@ class DashboardStatsAPIView(APIView):
         users_total = users_qs.count()
         users_active = users_qs.filter(is_active=True).count()
         users_new_30 = users_qs.filter(created_at__gte=last_30).count()
+        users_verified = users_qs.filter(is_verified=True).count()
 
         users_by_role = list(users_qs.values("role").annotate(count=Count("id")))
 
@@ -78,6 +79,7 @@ class DashboardStatsAPIView(APIView):
                     "active": users_active,
                     "inactive": users_total - users_active,
                     "new_last_30": users_new_30,
+                    "verified": users_verified,
                     "by_role": {item["role"]: item["count"] for item in users_by_role},
                 },
                 "audit": {

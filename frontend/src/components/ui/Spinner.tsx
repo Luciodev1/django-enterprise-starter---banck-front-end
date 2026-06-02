@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Loader2, Inbox, type LucideIcon } from "lucide-react";
 
 interface SpinnerProps {
   size?: "sm" | "md" | "lg";
@@ -22,9 +22,9 @@ interface LoadingStateProps {
 
 export function LoadingState({ message = "Carregando...", className }: LoadingStateProps) {
   return (
-    <div className={cn("flex flex-col items-center justify-center gap-3 py-12", className)}>
+    <div className={cn("flex flex-col items-center justify-center gap-3 py-14", className)}>
       <Spinner size="lg" />
-      <p className="text-sm text-secondary-500">{message}</p>
+      <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }
@@ -34,15 +34,28 @@ interface EmptyStateProps {
   description?: string;
   icon?: React.ReactNode;
   action?: React.ReactNode;
+  className?: string;
 }
 
-export function EmptyState({ title = "Sem dados", description, icon, action }: EmptyStateProps) {
+export function EmptyState({
+  title = "Sem dados",
+  description,
+  icon,
+  action,
+  className,
+}: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-      {icon && <div className="text-secondary-400">{icon}</div>}
-      <h3 className="text-lg font-medium text-secondary-900">{title}</h3>
-      {description && <p className="text-sm text-secondary-500 max-w-md">{description}</p>}
-      {action && <div className="mt-4">{action}</div>}
+    <div className={cn("flex flex-col items-center justify-center gap-3 px-4 py-14 text-center", className)}>
+      {icon !== null && (
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+          {icon ?? <Inbox className="h-6 w-6" />}
+        </div>
+      )}
+      <div className="space-y-1">
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        {description && <p className="mx-auto max-w-md text-sm text-muted-foreground">{description}</p>}
+      </div>
+      {action && <div className="mt-2">{action}</div>}
     </div>
   );
 }

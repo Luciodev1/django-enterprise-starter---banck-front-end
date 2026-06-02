@@ -4,34 +4,157 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --border: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 239 84% 67%;
+    --brand: 239 84% 67%;
+    --brand-foreground: 0 0% 100%;
+    --accent: 239 84% 96%;
+    --accent-foreground: 239 84% 30%;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 6%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222 47% 8%;
     --card-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --border: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 65%;
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 239 84% 67%;
+    --brand: 239 84% 67%;
+    --brand-foreground: 0 0% 100%;
+    --accent: 239 84% 15%;
+    --accent-foreground: 239 84% 90%;
   }
 }
 
 @layer base {
   * {
-    @apply border-[hsl(var(--border))];
+    @apply border-border;
+  }
+  html,
+  body {
+    @apply h-full;
   }
   body {
-    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))] font-sans antialiased;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  ::selection {
+    background-color: hsl(var(--brand) / 0.25);
+  }
+  /* Subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.45);
+    background-clip: padding-box;
+  }
+}
+
+@layer components {
+  .app-shell {
+    @apply min-h-screen bg-background;
+    background-image:
+      radial-gradient(at 0% 0%, hsl(var(--brand) / 0.06) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsl(199 89% 60% / 0.05) 0px, transparent 50%);
+  }
+
+  .app-grid-bg {
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.55) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.55) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%);
+  }
+
+  .auth-bg {
+    background:
+      radial-gradient(at 50% 0%, hsl(var(--brand) / 0.10) 0px, transparent 55%),
+      linear-gradient(180deg, hsl(220 30% 99%), hsl(220 30% 96%));
+  }
+
+  .dark .auth-bg {
+    background:
+      radial-gradient(at 50% 0%, hsl(var(--brand) / 0.15) 0px, transparent 55%),
+      linear-gradient(180deg, hsl(222 47% 6%), hsl(222 47% 4%));
+  }
+
+  .glass {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+  }
+
+  .dark .glass {
+    background: hsl(var(--card) / 0.6);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(239 84% 67%), hsl(199 89% 60%));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .ring-brand {
+    box-shadow:
+      0 0 0 1px hsl(var(--brand) / 0.4),
+      0 8px 30px -10px hsl(var(--brand) / 0.4);
+  }
+
+  .surface-card {
+    @apply rounded-xl border bg-card text-card-foreground shadow-card;
+  }
+
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }

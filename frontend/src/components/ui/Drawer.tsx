@@ -28,16 +28,15 @@ export function Drawer({
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!isOpen) return;
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
-    }
+    document.addEventListener("keydown", handleEscape);
+    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = "";
     };
   }, [isOpen, onClose]);
 
@@ -46,35 +45,43 @@ export function Drawer({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 bg-black/50 transition-opacity"
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-fade-in"
       onClick={(e) => e.target === overlayRef.current && onClose()}
+      role="dialog"
+      aria-modal="true"
     >
       <div
         className={cn(
-          "fixed top-0 bottom-0 bg-white shadow-modal flex flex-col",
-          side === "right" ? "right-0" : "left-0",
-          width,
-          "animate-in slide-in-from-" + (side === "right" ? "right" : "left")
+          "fixed bottom-0 top-0 flex flex-col border-l border-border bg-card shadow-modal",
+          side === "right" ? "right-0 animate-slide-in-right" : "left-0 animate-slide-in-left",
+          width
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {(title || description) && (
-          <div className="flex items-start justify-between p-6 border-b">
+          <div className="flex items-start justify-between border-b border-border/60 p-5">
             <div>
-              {title && <h2 className="text-lg font-semibold text-secondary-900">{title}</h2>}
-              {description && <p className="text-sm text-secondary-500 mt-1">{description}</p>}
+              {title && (
+                <h2 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
+                  {title}
+                </h2>
+              )}
+              {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
             </div>
             <button
+              type="button"
               onClick={onClose}
-              className="p-1 rounded-md hover:bg-muted transition-colors text-secondary-500"
               aria-label="Fechar"
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         )}
-        <div className="flex-1 overflow-y-auto p-6">{children}</div>
-        {footer && <div className="border-t p-4 flex justify-end gap-2">{footer}</div>}
+        <div className="flex-1 overflow-y-auto p-5 scrollbar-thin">{children}</div>
+        {footer && (
+          <div className="flex justify-end gap-2 border-t border-border/60 p-4">{footer}</div>
+        )}
       </div>
     </div>
   );

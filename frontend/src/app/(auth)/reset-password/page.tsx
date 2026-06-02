@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Alert, AlertDescription } from "@/components/ui/Alert";
 import { authService } from "@/services/auth";
+import { getApiErrorMessage } from "@/lib/utils";
+import { Mail, ArrowRight, CheckCircle2, ArrowLeft } from "lucide-react";
 
 const resetSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -38,25 +40,28 @@ export default function ResetPasswordPage() {
       const result = await authService.requestPasswordReset(data.email);
       setToken(result.token);
       setSent(true);
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        "Não foi possível enviar o email. Verifique o endereço e tente novamente.";
-      setError(msg);
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, "Não foi possível enviar o email. Verifique o endereço e tente novamente."));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthLayout title="Recuperar Senha" subtitle="Enviaremos um link para seu email">
+    <AuthLayout
+      title="Recuperar acesso"
+      subtitle="Enviaremos um link seguro para redefinir a sua senha."
+    >
       {sent ? (
-        <div className="text-center space-y-4">
+        <div className="space-y-5 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-success-50 text-success-600">
+            <CheckCircle2 className="h-7 w-7" />
+          </div>
           <Alert variant="success">
             <AlertDescription>
               Se o email existir em nossa base, um link de recuperação foi enviado.
               {token && (
-                <span className="block mt-2 p-2 bg-secondary-50 rounded text-xs font-mono break-all">
+                <span className="mt-2 block break-all rounded-md bg-secondary-100 p-2 font-mono text-[11px] text-secondary-800">
                   Token (dev): {token}
                 </span>
               )}
@@ -64,34 +69,42 @@ export default function ResetPasswordPage() {
           </Alert>
           <Link
             href={token ? `/reset-password/confirm?token=${token}` : "/login"}
-            className="text-sm text-primary-600 hover:underline block"
+            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 text-sm font-semibold text-white shadow-glow transition-colors hover:bg-primary-700"
           >
-            {token ? "Redefinir senha agora →" : "Voltar ao login"}
+            {token ? "Redefinir senha agora" : "Voltar ao login"}
+            <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && (
-            <Alert variant="error">
+            <Alert variant="error" onClose={() => setError(null)}>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
           <Input
             id="email"
             label="Email"
             type="email"
-            placeholder="seu@email.com"
+            autoComplete="email"
+            placeholder="nome@empresa.com"
+            leftIcon={<Mail className="h-4 w-4" />}
             error={errors.email?.message}
             {...register("email")}
           />
-          <Button type="submit" loading={loading} className="w-full">
-            Enviar Link
+
+          <Button type="submit" loading={loading} className="w-full" size="lg">
+            {loading ? "A enviar..." : "Enviar link de recuperação"}
           </Button>
-          <div className="text-center">
-            <Link href="/login" className="text-sm text-primary-600 hover:underline">
-              Voltar ao login
-            </Link>
-          </div>
+
+          <Link
+            href="/login"
+            className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Voltar ao login
+          </Link>
         </form>
       )}
     </AuthLayout>

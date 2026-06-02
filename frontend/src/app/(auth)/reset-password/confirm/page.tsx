@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Alert, AlertDescription } from "@/components/ui/Alert";
 import { authService } from "@/services/auth";
+import { getApiErrorMessage } from "@/lib/utils";
+import { Lock, KeyRound, ArrowLeft, CheckCircle2, ArrowRight } from "lucide-react";
 
 const confirmSchema = z
   .object({
@@ -19,7 +21,7 @@ const confirmSchema = z
     new_password_confirm: z.string(),
   })
   .refine((d) => d.new_password === d.new_password_confirm, {
-    message: "Senhas não conferem",
+    message: "As senhas não coincidem",
     path: ["new_password_confirm"],
   });
 
@@ -53,56 +55,86 @@ function ResetConfirmInner() {
       });
       setSuccess(true);
       setTimeout(() => router.push("/login"), 2500);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Token inválido ou expirado");
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, "Token inválido ou expirado"));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthLayout title="Redefinir Senha" subtitle="Defina uma nova senha para a sua conta">
+    <AuthLayout
+      title="Definir nova senha"
+      subtitle="Escolha uma senha forte com pelo menos 8 caracteres."
+    >
       {success ? (
-        <Alert variant="success">
-          <AlertDescription>
-            Senha redefinida com sucesso! A redirecionar para o login...
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-5 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-success-50 text-success-600">
+            <CheckCircle2 className="h-7 w-7" />
+          </div>
+          <Alert variant="success">
+            <AlertDescription>
+              Senha redefinida com sucesso! A redirecionar para o login...
+            </AlertDescription>
+          </Alert>
+          <Link
+            href="/login"
+            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 text-sm font-semibold text-white shadow-glow transition-colors hover:bg-primary-700"
+          >
+            Ir para o login
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       ) : (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && (
-            <Alert variant="error">
+            <Alert variant="error" onClose={() => setError(null)}>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
           <Input
             id="token"
             label="Token de recuperação"
+            placeholder="Cole o token recebido por email"
+            leftIcon={<KeyRound className="h-4 w-4" />}
             error={errors.token?.message}
             {...register("token")}
           />
+
           <Input
             id="new_password"
             type="password"
+            autoComplete="new-password"
             label="Nova senha"
+            placeholder="Mínimo 8 caracteres"
+            leftIcon={<Lock className="h-4 w-4" />}
+            hint="Use letras maiúsculas, minúsculas, números e símbolos."
             error={errors.new_password?.message}
             {...register("new_password")}
           />
+
           <Input
             id="new_password_confirm"
             type="password"
+            autoComplete="new-password"
             label="Confirmar nova senha"
+            leftIcon={<Lock className="h-4 w-4" />}
             error={errors.new_password_confirm?.message}
             {...register("new_password_confirm")}
           />
-          <Button type="submit" loading={loading} className="w-full">
-            Redefinir Senha
+
+          <Button type="submit" loading={loading} className="w-full" size="lg">
+            {loading ? "A redefinir..." : "Redefinir senha"}
           </Button>
-          <div className="text-center">
-            <Link href="/login" className="text-sm text-primary-600 hover:underline">
-              Voltar ao login
-            </Link>
-          </div>
+
+          <Link
+            href="/login"
+            className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Voltar ao login
+          </Link>
         </form>
       )}
     </AuthLayout>
