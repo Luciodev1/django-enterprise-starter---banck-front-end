@@ -14,5 +14,5 @@ celery>=5.3,<5.4
 gunicorn>=21.2,<21.3
 sentry-sdk>=2.0,<2.1
 argon2-cffi>=23.1,<23.2
-Pillow>=10.2,<10.3
+Pillow>=10.3,<11.0
 python-json-logger>=2.0,<2.1
