@@ -241,3 +241,15 @@ export function useChangePassword(options?: UseMutationOptions<void, Error, { ol
     ...options,
   });
 }
+
+export function useVerifyEmail(options?: UseMutationOptions<void, Error, string>) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (token) => authService.confirmEmailVerification(token),
+    ...options,
+    onSuccess: (...args) => {
+      qc.invalidateQueries({ queryKey: queryKeys.me });
+      options?.onSuccess?.(...args);
+    },
+  });
+}

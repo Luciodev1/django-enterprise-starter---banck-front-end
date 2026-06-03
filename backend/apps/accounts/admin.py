@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from unfold.admin import ModelAdmin
 
 from .forms import UserAdminChangeForm, UserAdminCreationForm
-from .models import User
+from .models import EmailVerificationToken, PasswordResetToken, User
 
 
 @admin.register(User)
@@ -31,3 +31,33 @@ class UserAdmin(ModelAdmin, BaseUserAdmin):
             "fields": ("email", "first_name", "last_name", "password1", "password2", "role"),
         }),
     )
+
+
+@admin.register(EmailVerificationToken)
+class EmailVerificationTokenAdmin(ModelAdmin):
+    list_display = ("user", "token_preview", "expires_at", "used_at", "is_valid")
+    list_filter = ("used_at", "expires_at")
+    search_fields = ("user__email", "token")
+    readonly_fields = ("token", "expires_at", "used_at", "created_at")
+
+    def token_preview(self, obj):
+        return f"{obj.token[:16]}..."
+    token_preview.short_description = "Token"
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(PasswordResetToken)
+class PasswordResetTokenAdmin(ModelAdmin):
+    list_display = ("user", "token_preview", "expires_at", "used_at", "is_valid")
+    list_filter = ("used_at", "expires_at")
+    search_fields = ("user__email", "token")
+    readonly_fields = ("token", "expires_at", "used_at", "created_at")
+
+    def token_preview(self, obj):
+        return f"{obj.token[:16]}..."
+    token_preview.short_description = "Token"
+
+    def has_add_permission(self, request):
+        return False

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.core.mail import send_mail
+from django.utils import timezone
 
 from .models import Notification
 
@@ -19,7 +20,7 @@ class NotificationService:
                 fail_silently=False,
             )
             notification.sent = True
-            notification.sent_at = now()
+            notification.sent_at = timezone.now()
             notification.save()
         except Exception as e:
             notification.error_message = str(e)

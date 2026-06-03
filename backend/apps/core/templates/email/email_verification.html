@@ -1,0 +1,15 @@
+{% extends "email/_base.html" %}
+{% block content %}
+<h2 style="color: #18181b; margin-top: 0;">Verifique seu email</h2>
+<p style="color: #52525b; line-height: 1.6;">
+  Olá{% if name %}, {{ name }}{% endif %}!<br><br>
+  Obrigado por criar sua conta no SIS Enterprise. Para começar a usar, confirme seu endereço de email clicando no botão abaixo:
+</p>
+<div style="text-align: center; margin: 32px 0;">
+  <a href="{{ verification_link }}" class="button">Verificar Email</a>
+</div>
+<p style="color: #52525b; font-size: 14px;">
+  Este link expira em {{ expiry_hours }} horas.<br>
+  Se você não criou uma conta, ignore este email.
+</p>
+{% endblock %}

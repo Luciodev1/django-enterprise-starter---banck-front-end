@@ -13,6 +13,8 @@ class AuditLog(models.Model):
         ("update", "Update"),
         ("delete", "Delete"),
         ("permission_change", "Permission Change"),
+        ("email_verification_requested", "Email Verification Requested"),
+        ("email_verified", "Email Verified"),
     ])
     model_name = models.CharField(max_length=100)
     model_id = models.CharField(max_length=100, blank=True)

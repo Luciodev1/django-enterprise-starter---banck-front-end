@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { PageHeader } from "@/components/PageHeader";
 import { authService } from "@/services/auth";
-import { useMe, useUnreadCount, useHealth } from "@/hooks/queries";
+import { useMe, useUnreadCount, useHealth, useMyNotifications } from "@/hooks/queries";
 import { useAuth } from "@/features/auth/AuthContext";
 import {
   Shield,
@@ -22,9 +22,12 @@ import {
   KeyRound,
   Database,
   Cpu,
+  Inbox,
+  ChevronRight,
 } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 function StatusPill({ ok, label }: { ok: boolean; label: string }) {
   return (
@@ -51,18 +54,17 @@ export default function SettingsPage() {
   const { data: me } = useMe();
   const { data: unread } = useUnreadCount();
   const { data: health } = useHealth();
+  const { data: notifData } = useMyNotifications({ page: 1, page_size: 3 });
   const { logout } = useAuth();
   const [verifying, setVerifying] = useState(false);
   const [verifyMsg, setVerifyMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [tokenDisplay, setTokenDisplay] = useState<string | null>(null);
 
   const requestVerification = async () => {
     setVerifying(true);
     setVerifyMsg(null);
     try {
-      const result = await authService.requestEmailVerification();
-      setTokenDisplay(result.token);
-      setVerifyMsg({ type: "success", text: "Token emitido. Em produção, enviado por email." });
+      await authService.requestEmailVerification();
+      setVerifyMsg({ type: "success", text: "Enviámos um email de verificação para a sua caixa de entrada." });
     } catch (err: unknown) {
       setVerifyMsg({ type: "error", text: getApiErrorMessage(err, "Erro ao solicitar verificação") });
     } finally {
@@ -82,11 +84,6 @@ export default function SettingsPage() {
         <Alert variant={verifyMsg.type} onClose={() => setVerifyMsg(null)}>
           <AlertDescription>
             {verifyMsg.text}
-            {tokenDisplay && (
-              <div className="mt-2 break-all rounded-md border border-border bg-muted/40 p-2 font-mono text-xs text-foreground/80">
-                <span className="text-muted-foreground">Token:</span> {tokenDisplay}
-              </div>
-            )}
           </AlertDescription>
         </Alert>
       )}
@@ -126,14 +123,43 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <div className="space-y-0.5">
-              <p className="font-medium text-foreground">Caixa de entrada</p>
-              <p className="text-sm text-muted-foreground">Notificações pendentes na sua conta</p>
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200">
+                <Inbox className="h-4 w-4" />
+              </div>
+              <div className="space-y-0.5">
+                <p className="font-medium text-foreground">Caixa de entrada</p>
+                <p className="text-sm text-muted-foreground">Notificações pendentes na sua conta</p>
+              </div>
             </div>
             <Badge variant={unread && unread > 0 ? "warning" : "secondary"} className="px-2.5 py-1">
               {unread ?? 0} não lidas
             </Badge>
           </div>
+
+          {notifData?.results && notifData.results.length > 0 && (
+            <ul className="divide-y divide-border/60 rounded-lg border border-border">
+              {notifData.results.map((n) => (
+                <li key={n.id} className={cn("flex items-start gap-3 px-3 py-2.5", !n.read_at && "bg-primary-50/30 dark:bg-primary-900/10")}>
+                  <div className="min-w-0 flex-1">
+                    <p className={cn("text-sm truncate", !n.read_at ? "font-semibold text-foreground" : "text-foreground/80")}>
+                      {n.subject}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">{n.body}</p>
+                  </div>
+                  {!n.read_at && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary-500" />}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <Link
+            href="/dashboard/notifications"
+            className="flex items-center justify-center gap-1 text-sm font-medium text-primary-600 transition-colors hover:text-primary-700"
+          >
+            Ver todas as notificações
+            <ChevronRight className="h-4 w-4" />
+          </Link>
         </CardContent>
       </Card>
 

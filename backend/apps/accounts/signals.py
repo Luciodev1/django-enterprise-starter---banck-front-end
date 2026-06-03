@@ -1,6 +1,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from apps.accounts.services import AuthService
 from apps.audit.models import AuditLog
 
 
@@ -14,3 +15,5 @@ def user_post_save(sender, instance, created, **kwargs):
             performed_by=instance,
             description=f"User {instance.email} created",
         )
+        if not instance.is_verified and instance.is_active:
+            AuthService.request_email_verification(instance)

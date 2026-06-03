@@ -22,37 +22,18 @@ import {
   Smartphone,
   Monitor,
   Inbox,
+  ArrowUpRight,
+  Eye,
 } from "lucide-react";
 import type { Notification } from "@/services/notifications";
 import { cn } from "@/lib/utils";
 
-const channelIcon = (channel: Notification["channel"]) => {
-  switch (channel) {
-    case "email":
-      return Mail;
-    case "sms":
-    case "whatsapp":
-      return MessageSquare;
-    case "push":
-      return Monitor;
-    default:
-      return Smartphone;
-  }
-};
-
-const channelVariant = (channel: Notification["channel"]) => {
-  switch (channel) {
-    case "email":
-      return "info" as const;
-    case "sms":
-    case "whatsapp":
-      return "success" as const;
-    case "push":
-      return "default" as const;
-    default:
-      return "secondary" as const;
-  }
-};
+const channelConfig = {
+  email: { icon: Mail, label: "Email", color: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200" },
+  sms: { icon: MessageSquare, label: "SMS", color: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-200" },
+  whatsapp: { icon: MessageSquare, label: "WhatsApp", color: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-200" },
+  push: { icon: Monitor, label: "Push", color: "bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-200" },
+} as const;
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);
@@ -159,72 +140,76 @@ export default function NotificationsPage() {
               }
             />
           ) : (
-            <ul className="divide-y divide-border/60">
+            <div className="space-y-2">
               {filtered.map((n) => {
-                const Icon = channelIcon(n.channel);
+                const cfg = channelConfig[n.channel];
+                const Icon = cfg.icon;
                 const isUnread = !n.read_at;
                 return (
-                  <li
+                  <div
                     key={n.id}
                     className={cn(
-                      "group flex items-start gap-3 p-3 transition-colors sm:p-4",
-                      isUnread && "bg-primary-50/30 dark:bg-primary-900/10"
+                      "group relative overflow-hidden rounded-xl border p-4 transition-all",
+                      isUnread
+                        ? "border-primary-200 bg-primary-50/40 shadow-sm dark:border-primary-800 dark:bg-primary-950/20"
+                        : "border-border bg-card hover:border-border/80 hover:shadow-sm"
                     )}
                   >
-                    <div
-                      className={cn(
-                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-                        isUnread
-                          ? "bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200"
-                          : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-baseline gap-2">
-                        <p
-                          className={cn(
-                            "text-sm",
-                            isUnread
-                              ? "font-semibold text-foreground"
-                              : "font-medium text-foreground/80"
-                          )}
-                        >
-                          {n.subject}
-                        </p>
-                        {isUnread && (
-                          <Badge variant="default" className="text-[10px]">
-                            Nova
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">{n.body}</p>
-                      <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant={channelVariant(n.channel)} className="capitalize">
-                          {n.channel}
-                        </Badge>
-                        <span>•</span>
-                        <span>{formatDate(n.created_at)}</span>
-                      </div>
-                    </div>
                     {isUnread && (
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => markRead.mutate(n.id)}
-                        loading={markRead.isPending}
-                        title="Marcar como lida"
-                        aria-label="Marcar como lida"
-                        className="opacity-60 group-hover:opacity-100"
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
+                      <span className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500" />
                     )}
-                  </li>
+                    <div className="flex items-start gap-4">
+                      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", cfg.color)}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className={cn("truncate text-sm", isUnread ? "font-semibold text-foreground" : "font-medium text-foreground/80")}>
+                              {n.subject}
+                            </p>
+                            <div className="mt-1 line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                              {n.body.split("\n").filter(Boolean).map((para, i) => (
+                                <p key={i} className={i > 0 ? "mt-2" : ""}>{para}</p>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            {isUnread && (
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => markRead.mutate(n.id)}
+                                loading={markRead.isPending}
+                                title="Marcar como lida"
+                                aria-label="Marcar como lida"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{formatDate(n.created_at)}</span>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className={cn(
+                            "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium",
+                            isUnread ? "bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-200" : "bg-muted text-muted-foreground"
+                          )}>
+                            <Icon className="h-3 w-3" />
+                            {cfg.label}
+                          </span>
+                          {!n.sent && (
+                            <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+                              Não enviado
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </ul>
+            </div>
           )}
           <div className="mt-4">
             <Pagination

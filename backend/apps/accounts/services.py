@@ -1,7 +1,9 @@
+from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.core.email import send_templated_email
 from apps.core.utils import log_audit, log_security
 
 from .models import EmailVerificationToken, PasswordResetToken
@@ -92,7 +94,23 @@ class AuthService:
         EmailVerificationToken.objects.filter(user=user, used_at__isnull=True).update(used_at=timezone.now())
         token = EmailVerificationToken.create_for_user(user)
         log_audit("email_verification_requested", user)
-        return {"token": token.token}, None
+
+        verification_link = f"{settings.FRONTEND_URL}/verify-email?token={token.token}"
+        try:
+            send_templated_email(
+                "email_verification",
+                user,
+                context={
+                    "name": user.first_name,
+                    "verification_link": verification_link,
+                    "expiry_hours": 48,
+                },
+            )
+        except Exception:
+            pass
+
+        response = {"token": token.token, "verification_link": verification_link} if settings.DEBUG else {"message": "Email de verificação enviado"}
+        return response, None
 
     @staticmethod
     def confirm_email_verification(token: str):
@@ -109,5 +127,8 @@ class AuthService:
         user.save(update_fields=["is_verified", "updated_at"])
         verify.used_at = timezone.now()
         verify.save(update_fields=["used_at"])
+
+        EmailVerificationToken.objects.filter(user=user, used_at__isnull=True).update(used_at=timezone.now())
+
         log_audit("email_verified", user)
         return {"message": "Email verified successfully"}, None

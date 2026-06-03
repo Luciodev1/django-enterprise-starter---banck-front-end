@@ -17,6 +17,16 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
   redis:
     image: redis:7-alpine
     ports:
@@ -34,6 +44,9 @@ services:
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_DEBUG: "True"
+      EMAIL_HOST: ${EMAIL_HOST:-mailpit}
+      EMAIL_PORT: ${EMAIL_PORT:-1025}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-False}
       POSTGRES_HOST: postgres
       POSTGRES_DB: ${POSTGRES_DB:-django_enterprise}
       POSTGRES_USER: ${POSTGRES_USER:-django_user}
@@ -63,6 +76,9 @@ services:
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_DEBUG: "True"
+      EMAIL_HOST: ${EMAIL_HOST:-mailpit}
+      EMAIL_PORT: ${EMAIL_PORT:-1025}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS:-False}
       POSTGRES_HOST: postgres
       POSTGRES_DB: ${POSTGRES_DB:-django_enterprise}
       POSTGRES_USER: ${POSTGRES_USER:-django_user}

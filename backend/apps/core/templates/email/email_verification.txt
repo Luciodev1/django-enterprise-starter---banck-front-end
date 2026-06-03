@@ -1,0 +1,11 @@
+{% extends "email/_base.txt" %}
+{% block content %}Verifique seu email
+
+Olá{% if name %}, {{ name }}{% endif %}!
+
+Obrigado por criar sua conta no SIS Enterprise. Para começar a usar, confirme seu endereço de email clicando no link abaixo:
+
+{{ verification_link }}
+
+Este link expira em {{ expiry_hours }} horas.
+Se você não criou uma conta, ignore este email.{% endblock %}

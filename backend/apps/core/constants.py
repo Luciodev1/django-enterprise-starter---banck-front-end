@@ -13,6 +13,8 @@ AUDIT_ACTIONS = (
     ("update", "Update"),
     ("delete", "Delete"),
     ("permission_change", "Permission Change"),
+    ("email_verification_requested", "Email Verification Requested"),
+    ("email_verified", "Email Verified"),
 )
 
 NOTIFICATION_CHANNELS = (

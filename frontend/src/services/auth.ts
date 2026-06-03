@@ -50,10 +50,14 @@ export const authService = {
     await api.post("/accounts/password-reset/confirm/", payload);
   },
 
-  async requestEmailVerification(): Promise<{ token: string }> {
-    const { data } = await api.post<ApiResponse<{ token: string }>>(
+  async requestEmailVerification(): Promise<{ token?: string; message?: string; verification_link?: string }> {
+    const { data } = await api.post<ApiResponse<{ token?: string; message?: string; verification_link?: string }>>(
       "/accounts/email-verification/request/"
     );
     return data.data;
+  },
+
+  async confirmEmailVerification(token: string): Promise<void> {
+    await api.post("/accounts/email-verification/confirm/", { token });
   },
 };
